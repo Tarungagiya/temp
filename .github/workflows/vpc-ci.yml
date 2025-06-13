@@ -1,0 +1,43 @@
+name: VPC CI
+
+on:
+  push:
+    paths:
+      - infra/**
+    branches: [main]
+
+jobs:
+  deploy-vpc:
+    name: Deploy VPC for each environment
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev, stage, prod]
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::043902877240:role/github-actions-oidc-role
+          aws-region: ap-south-1
+
+      - name: Set environment variable
+        run: echo "TF_VAR_environment=${{ matrix.env }}" >> $GITHUB_ENV
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Terraform Init & Apply
+        run: |
+          cd environments/${{ matrix.env }}
+          terraform init -backend-config="key=${{ matrix.env }}/terraform.tfstate"
+          terraform apply -auto-approve

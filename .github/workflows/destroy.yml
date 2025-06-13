@@ -1,0 +1,41 @@
+name: Destroy All VPC Environments
+
+on:
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  destroy:
+    name: Destroy VPC in ${{ matrix.env }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        env: [dev, stage, prod]
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-oidc-role
+          aws-region: ap-south-1
+
+      - name: Set environment variable
+        run: echo "TF_VAR_environment=${{ matrix.env }}" >> $GITHUB_ENV
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Terraform Init & Destroy
+        run: |
+          cd environments/${{ matrix.env }}
+          terraform init -backend-config="key=${{ matrix.env }}/terraform.tfstate"
+          terraform destroy -auto-approve
