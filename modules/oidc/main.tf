@@ -1,7 +1,7 @@
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"] # GitHub OIDC thumbprint
+  thumbprint_list = ["7560D6F40FA55195F740EE2B1B7C0B4836CBE103"] # Use real thumbprint of GitHub OIDC root cert
 }
 
 resource "aws_iam_role" "github_actions" {
@@ -9,24 +9,22 @@ resource "aws_iam_role" "github_actions" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Principal = {
-          Federated = aws_iam_openid_connect_provider.github.arn
-        },
-        Action = "sts:AssumeRoleWithWebIdentity",
-        Condition = {
-          StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:Tarungagiya/temp:*"
-          }
+    Statement = [{
+      Effect = "Allow",
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.github.arn
+      },
+      Action = "sts:AssumeRoleWithWebIdentity",
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:sub" : "repo:Tarungagiya/temp:ref:refs/heads/main"
         }
       }
-    ]
+    }]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "attach_vpc_policy" {
+resource "aws_iam_role_policy_attachment" "attach_policy" {
   role       = aws_iam_role.github_actions.name
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess" # Use minimal custom policy in production
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
