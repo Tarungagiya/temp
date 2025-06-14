@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [dev, test, prod]
+        env: [dev, stage, prod]
 
     permissions:
       id-token: write
