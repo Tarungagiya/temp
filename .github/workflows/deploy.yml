@@ -33,5 +33,5 @@ jobs:
 
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve
+        run: terraform apply -lock=false -auto-approve
         working-directory: envs/${{ matrix.env }}
